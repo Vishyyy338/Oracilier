@@ -1,0 +1,29 @@
+# Security & Keys (CRITICAL: NEVER COMMIT)
+*.pem
+*.key
+*.id_rsa
+*.env
+*.env.*
+server.log
+*.log
+
+# Jupyter Notebooks & Checkpoints
+*.ipynb
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# Python caches and Virtualenvs
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+
+# Legacy binary formats (CSVs are used instead)
+*.xlsx
+*.xls
+
+# OS generated files
+.DS_Store
+Thumbs.db

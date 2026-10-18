@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ORACILIER – Real-Time Planner & AI Actuation</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="bg" id="bg" aria-hidden="true"><i></i><i></i></div>
+<nav class="nav">
+  <a href="index.html" class="logo" style="color:inherit; text-decoration:none;"><span class="orb"></span>ORACILIER</a>
+  <span class="sp"></span>
+  <a href="index.html"><button class="alt">Home</button></a>
+  <a href="planner.html"><button class="alt on">Planner</button></a>
+  <a href="flow.html"><button class="alt">How it decides</button></a>
+  <span id="chip" class="chip">🟢 LinuxONE Telum Engine Online</span>
+</nav>
+<main>
+<section class="view on" id="v-app">
+<section class="card" aria-label="Facility"><h2>Your facility</h2>
+<div class="row2"><div><label for="FN" style="margin-top:0">Facility name</label><input type="text" id="FN" value="Pilot data center"></div><div><label for="CL" style="margin-top:0">Climate</label><select id="CL"><option value="chennai">Chennai region, India (hot, humid)</option><option value="oak">Oak Ridge, USA</option><option value="nordic">Nordic coast</option></select></div>
+<div><label for="TT" style="margin-top:12px">Today’s average temperature (°C)</label><input type="number" id="TT" step="0.1"></div><div><label for="K" style="margin-top:12px">Facility size</label><select id="K"><option value="1">Pilot site (about 11 kW)</option><option value="90">Mid-size (about 1 MW)</option><option value="1040">Frontier scale (about 11.6 MW)</option></select></div></div>
+<div class="prof" style="margin-top:14px"><div><b id="pL"></b>typical IT load</div><div><b id="pO"></b>measured PUE</div><div><b id="pD"></b>days of meter history</div><div style="flex:1"></div><select id="FS" aria-label="Saved facilities" style="width:auto;max-width:210px"><option value="">Saved facilities</option></select><button class="alt" id="rmFac" hidden>Remove</button><button class="alt" id="save">Save facility</button><span id="saveMsg" class="note" style="margin:0"></span></div></section>
+<section class="card" id="mlCard" style="margin-top:18px" aria-label="Dataset and machine learning"><h2>Dataset &amp; machine learning</h2>
+<p class="sub" style="margin-top:0">Upload your own history as CSV (needs <b>date</b> and <b>temp_c</b>; optional <b>humidity</b>, <b>it_load_kw</b>, <b>facility_kw</b>). A Random Forest learns from it, is tested on days it never saw (RMSE), and then forecasts temperature and power overhead for the plan.</p>
+<div class="row2"><div><label for="dsFile" style="margin-top:0">Upload dataset (.csv)</label><input type="file" id="dsFile" accept=".csv,.txt"></div>
+<div><label style="margin-top:0">Trees <b id="vTr"></b></label><input id="Tr" type="range" min="10" max="200" value="60"><label>Max depth <b id="vDp"></b></label><input id="Dp" type="range" min="3" max="12" value="7"></div></div>
+<textarea id="ds" aria-label="Dataset CSV" placeholder="or paste rows here:&#10;date,temp_c,humidity,it_load_kw,facility_kw&#10;2024-01-01,28.4,74,520,610"></textarea>
+<div style="margin-top:16px;">
+  <div style="font-size:0.78rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--mute); margin-bottom:8px;">Load Preconfigured Facility Data:</div>
+  <div class="qs" style="margin-bottom:12px;">
+    <button class="alt" id="loadDC1" style="border-color:rgba(77,255,168,.4); color:var(--good);">🏢 Data Center 1 (Pilot · 11 kW)</button>
+    <button class="alt" id="loadDC2" style="border-color:rgba(255,179,71,.4); color:var(--warn);">🏬 Data Center 2 (Mid-size · 1 MW)</button>
+    <button class="alt" id="loadDC3" style="border-color:rgba(255,79,216,.4); color:var(--water);">🏭 Data Center 3 (Hyperscale · 11.5 MW)</button>
+    <button class="alt" id="useBuilt">Built-in History</button>
+  </div>
+  <div class="cta" style="margin:0;">
+    <button id="train">⚡ Retrain AI on Dataset</button>
+    <button class="alt" id="dl">📥 Download Plan (CSV)</button>
+  </div>
+</div>
+<div id="dsMsg" class="note" style="margin-top:10px"></div><div id="mlWarn" class="note" style="margin-top:4px;color:var(--warn)"></div>
+<div class="kpi" id="mlK"></div>
+<svg id="mlChart" viewBox="0 0 760 220" role="img" aria-label="Actual versus predicted temperature on held-out test days"></svg>
+<div class="legend"><span style="color:var(--good)">Solid: actual temperature</span><span style="color:var(--water)">Dashed: model prediction on held-out days</span></div>
+<div id="imp"></div></section>
+<div class="grid">
+<section class="card" aria-label="Settings">
+<h2>Plan settings</h2>
+<label>Days to plan <b id="vN"></b></label><input id="N" type="range" min="1" max="16" value="14">
+<label for="SRC">Temperature outlook</label>
+<select id="SRC"><option value="model">Today’s reading + typical climate</option><option value="ml">ML forecast (Random Forest on dataset)</option><option value="user">My weather forecast (CSV)</option></select>
+<div id="csvBox" hidden>
+<textarea id="csv" aria-label="Forecast CSV" placeholder="date,temp_c&#10;2023-06-17,16.5&#10;2023-06-18,17.1"></textarea>
+<input type="file" id="file" accept=".csv,.txt" aria-label="Upload forecast CSV" style="margin-top:6px;font-size:.8rem"><div id="csvMsg" class="note" style="margin-top:4px"></div>
+</div>
+<label>What if it is warmer? <b id="vX"></b></label><input id="X" type="range" min="0" max="20" value="0">
+<label for="S">Local water stress</label>
+<select id="S"><option value="0">Low</option><option value="1">Medium</option><option value="2" selected>High</option></select>
+<label>Save water priority <b id="vWw"></b></label><input id="Ww" type="range" min="0" max="100" value="70">
+<input id="We" type="hidden" value="30">
+<input id="Wc" type="hidden" value="0">
+</section>
+
+<section class="card" aria-label="Plan summary">
+<h2>Plan summary</h2>
+<p class="big" id="sMain" aria-live="polite"></p>
+<p id="sSub" style="color:var(--mute);margin:6px 0 0"></p>
+<div class="kpi" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));"><div><b id="kW"></b>daily water</div><div><b id="kFlow"></b>water flow (LPM)</div><div><b id="kPump"></b>pump speed (m³/h)</div><div><b id="kR"></b>firm call days</div><div><b id="kP"></b>measured PUE</div></div>
+<div id="board"></div>
+<p id="acc" style="font-size:.8rem;color:var(--mute);margin:0"></p>
+<div class="cta" style="margin:12px 0 0"><button class="alt" id="shareBtn">Copy plan summary</button></div><textarea id="shr" hidden readonly aria-label="Plan summary text" style="min-height:130px"></textarea>
+</section>
+</div>
+
+<section class="card" style="margin-top:16px" aria-label="Temperature outlook">
+<h2>Temperature outlook and water per day</h2>
+<svg id="chart" viewBox="0 0 760 300" role="img" aria-label="Forecast temperature with uncertainty band, and daily water use for the chosen strategy versus evaporative"></svg>
+<div class="legend"><span>Line and shaded band: temperature and likely error</span><span>Bars: water per day (magenta = chosen, ghost = evaporative)</span></div>
+</section>
+
+<section class="card" style="margin-top:16px" aria-label="Day by day plan">
+<h2>Day-by-day plan</h2>
+<div class="wrap"><table id="tbl"></table></div>
+</section>
+
+<section class="card" style="margin-top:16px" aria-label="Agent">
+<h2>ORACILIER agent</h2><p class="sub" style="margin:0 0 12px">An AI agent that reads your plan, tries different settings, switches or saves facilities for you, and reports what it did. You can undo its changes.</p><div class="qs"><button class="alt" data-q="Lower the water budget as far as you can without total cost rising more than 15%. Try a few settings, keep the best, and tell me what you changed.">Cut water, cap cost</button><button class="alt" data-q="Stress-test a heatwave: set the warmer-than-expected slider to 8 °C, compare against the baseline, and report what changes.">Heatwave test</button><button class="alt" data-q="Find the riskiest days in the plan and explain why they are close calls.">Riskiest days</button><button class="alt" data-q="Save these settings as a new facility called Backup plan.">Save as new facility</button></div>
+<div class="ag"><button id="agBrief">Explain this plan</button><input type="text" id="agQ" placeholder="e.g. Which days are risky and why?" aria-label="Question for the agent"><button class="alt" id="agAsk">Ask</button></div>
+<div id="agOut" aria-live="polite">Pick a goal above, or type your own.</div><div id="agLog" class="note" style="white-space:pre-wrap;margin:10px 0 0"></div><button class="alt" id="agUndo" hidden style="margin-top:10px">Undo agent changes</button>
+</section>
+
+<!-- Account Card Disabled
+<section class="card" id="acct" hidden style="margin-top:16px" aria-label="Account"><h2>Account</h2><div class="row2"><div><label for="oldP" style="margin-top:0">Current password</label><input type="password" id="oldP" autocomplete="current-password"></div><div><label for="newP" style="margin-top:0">New password</label><input type="password" id="newP" autocomplete="new-password"></div></div><div class="cta" style="margin:14px 0 0"><button id="chgP">Change password</button><button class="alt" id="delAcc">Delete account</button></div><p class="note" id="acMsg" style="margin:10px 0 0"></p></section>
+-->
+<p class="note">Real: IT load and power overhead come from the pilot site’s meters (Jan–Jun 2023). Modeled: water per strategy (evaporating 1 kg removes about 2.26 MJ; fan, pump and cost factors are assumptions) and the temperature outlook. The outlook has no live weather feed. It starts from today’s reading and relaxes toward typical monthly climate (approximate values), so for a real forecast load a CSV, such as the one from the Python script. The meter history only reaches 24.5 °C, so hot-climate results are extrapolated.</p>
+</section>
+</main>
+<script src="js/app.js"></script>
+</body>
+</html>

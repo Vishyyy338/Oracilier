@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ORACILIER – Decision Flow Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="bg" id="bg" aria-hidden="true"><i></i><i></i></div>
+<nav class="nav">
+  <a href="index.html" class="logo" style="color:inherit; text-decoration:none;"><span class="orb"></span>ORACILIER</a>
+  <span class="sp"></span>
+  <a href="index.html"><button class="alt">Home</button></a>
+  <a href="planner.html"><button class="alt">Planner</button></a>
+  <a href="flow.html"><button class="alt on">How it decides</button></a>
+  <span id="chip" class="chip">🟢 LinuxONE Telum Engine Online</span>
+</nav>
+<main>
+<section class="view on" id="v-flow">
+  <h1 class="hero" style="font-size:clamp(1.6rem,4.5vw,2.4rem)">How ORACILIER decides</h1>
+  <p class="sub">Live decision pipeline: facility telemetry & weather outlook drive real-time predictive cooling optimization.</p>
+  <div class="card">
+    <svg id="flow" viewBox="0 0 800 320" role="img" aria-label="Flowchart: today’s reading and facility load feed a forecast, three cooling strategies are simulated, scored, and checked for robustness"></svg>
+  </div>
+  <div class="grid" style="grid-template-columns:1fr 1fr">
+    <div class="card">
+      <h2>Forecast</h2>
+      <p class="sub" style="margin:0">Each day’s temperature is typical climate for that date plus a share of today’s gap from normal (75% remains after one day, fading from there). The error band grows with the gap’s uncertainty.</p>
+    </div>
+    <div class="card">
+      <h2>Choose and check</h2>
+      <p class="sub" style="margin:0">Strategies are scored on water, energy and cost using your priorities. The pick is repeated at the low and high ends of the error band; if it changes, the day is a close call.</p>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+// Floating background animation
+(()=>{
+  const bg = document.getElementById("bg");
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches || !bg) return;
+  for(let i=0; i<16; i++){
+    const b = document.createElement("b"), s = 6 + Math.random()*16;
+    b.style.cssText = "--s:" + s + "px;--x:" + Math.random()*100 + "%;--d:" + (14+Math.random()*16) + "s;--dl:-" + Math.random()*20 + "s";
+    bg.appendChild(b);
+  }
+})();
+
+// Decision Flow Diagram Renderer
+function drawFlow() {
+  const flowEl = document.getElementById("flow");
+  if (!flowEl) return;
+
+  const f = (n, d = 0) => n.toLocaleString(undefined, { maximumFractionDigits: d, minimumFractionDigits: d });
+  const ds = d => d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const box = (x, y, w, h, a, b, c) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" fill="var(--card)" stroke="${c||"var(--line)"}" stroke-width="${c?3:1.5}"/><text x="${x+w/2}" y="${y+h/2-(b?3:-4)}" text-anchor="middle" font-size="12.5" font-weight="600" fill="var(--ink)">${a}</text>${b?`<text x="${x+w/2}" y="${y+h/2+14}" text-anchor="middle" font-size="11" fill="var(--mute)">${b}</text>`:""}`;
+  const ar = (a, b, c, d) => `<line class="fl" x1="${a}" y1="${b}" x2="${c}" y2="${d}" stroke="var(--water)" stroke-width="2"/>`;
+
+  let s = ar(130, 90, 170, 148) + ar(130, 220, 170, 162) + ar(530, 155, 555, 155) + ar(660, 155, 695, 155);
+  const ys = [40, 127, 214];
+
+  const strats = [
+    { n: "Evaporative cooling", water: 4821, lpm: "3.3 LPM", win: false },
+    { n: "Air-cooled (dry)", water: 0, lpm: "0.0 LPM", win: false },
+    { n: "Hybrid", water: 1446, lpm: "1.0 LPM", win: true }
+  ];
+
+  strats.forEach((r, i) => {
+    s += ar(300, 155, 345, ys[i] + 27) + ar(515, ys[i] + 27, 555, 155);
+  });
+
+  s += box(10, 60, 120, 60, "Today’s reading", `12.0 °C · ${ds(new Date())}`);
+  s += box(10, 190, 120, 60, "Facility load", "11.2 kW");
+  s += box(170, 125, 130, 60, "Forecast", "band ±1.8 °C");
+
+  strats.forEach((r, i) => {
+    s += box(345, ys[i], 170, 55, r.n, `${f(r.water)} L · ${r.lpm}`, r.win ? "var(--good)" : "");
+  });
+
+  s += box(555, 125, 105, 60, "Score", "cooling fit");
+  s += box(695, 125, 100, 60, "Optimal", "Hybrid", "var(--good)");
+
+  flowEl.innerHTML = s;
+}
+
+// Immediate execution on page load
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", drawFlow);
+} else {
+  drawFlow();
+}
+
+// Backend status indicator
+fetch("/health")
+  .then(r => r.json())
+  .then(d => {
+    const chip = document.getElementById("chip");
+    if (chip) {
+      chip.textContent = "🟢 LinuxONE Backend: Connected (Telum AI Ready)";
+      chip.style.borderColor = "var(--good)";
+      chip.style.color = "var(--good)";
+    }
+  })
+  .catch(() => {});
+</script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+services:
+  datacenter-cooling-ai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dc_cooling_predictive_ai
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - PLATFORM=IBM_LinuxONE_L1CC
+      - TELUM_ACCELERATION=ENABLED
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+

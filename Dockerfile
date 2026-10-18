@@ -1,21 +1,25 @@
 # ==============================================================================
 # Dockerfile: Data Center Water Cooling Predictive AI
-# Target Architecture: Multi-arch (IBM LinuxONE s390x & x86_64)
+# Target Architecture: Multi-arch (IBM LinuxONE s390x, x86_64, arm64)
+# Base: Ubuntu 24.04 LTS (Native multi-arch support)
 # Security: Hardened, non-root user execution
-# Frameworks: PyTorch + XGBoost + FastAPI
 # ==============================================================================
 
-FROM python:3.11-slim
+FROM ubuntu:24.04
 
-# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DEBIAN_FRONTEND=noninteractive \
     PORT=8000
 
-# Install system dependencies
+# Install Python 3 and pre-compiled binary packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
+    python3 \
+    python3-pip \
+    python3-numpy \
+    python3-pandas \
+    python3-sklearn \
+    python3-joblib \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
@@ -24,22 +28,15 @@ RUN groupadd -r appuser && useradd -r -g appuser -d /app -s /sbin/nologin appuse
 
 WORKDIR /app
 
-# Copy dependency specifications and install
-COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
-
 # Copy application source code
 COPY main.py .
 COPY ml_engine.py .
 COPY predictive_ai.py .
-COPY server.py .
 
 # Copy data, models, and static dashboard assets
 COPY data/ ./data/
 COPY models/ ./models/
 COPY static/ ./static/
-COPY ml_baseline.ipynb predictive_ai.ipynb ./
 
 RUN chown -R appuser:appuser /app
 
@@ -53,5 +50,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Start FastAPI Predictive AI service
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Start Predictive AI service
+CMD ["python3", "main.py"]

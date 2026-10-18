@@ -225,8 +225,11 @@ def get_trained_package():
     """Loads pre-trained model package or trains one if missing."""
     target_path = MODEL_PATH if os.path.exists(MODEL_PATH) else "cooling_baseline_model.joblib"
     if os.path.exists(target_path):
-        return joblib.load(target_path)
-    print("Baseline model not found. Training now...")
+        try:
+            return joblib.load(target_path)
+        except Exception:
+            pass
+    print("Baseline model not found or corrupted. Training now...")
     train_baseline_models(save_artifact=True)
     return joblib.load(MODEL_PATH)
 

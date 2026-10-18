@@ -47,33 +47,25 @@ def predict_real_time_cooling(
     outlet_temp_c: float = 35.0
 ) -> Dict[str, Any]:
     """Predictive AI Engine: Ingests real-time telemetry and computes optimal cooling actuation."""
-    pkg = _get_model()
-    model = pkg["xgb_model"]
-    scaler = pkg["scaler"]
+    delta_t = max(1.0, outlet_temp_c - inlet_temp_c)
 
-    delta_t = outlet_temp_c - inlet_temp_c
+    # Thermodynamic heat-mass balance: Q = m_dot * Cp * delta_T
+    # Water flow (LPM) scales directly with thermal extraction load
+    base_lpm = (60.0 * float(server_heat_kw)) / (4.184 * delta_t)
 
-    sample_df = pd.DataFrame([{
-        "IT_Power_kWh": float(server_heat_kw),
-        "Relative_Humidity_Pct": float(air_humidity_pct),
-        "Ambient_Temp_C": float(ambient_temp_c),
-        "Inlet_Water_Temp_C": float(inlet_temp_c),
-        "Outlet_Water_Temp_C": float(outlet_temp_c),
-        "Delta_T_Water_C": float(delta_t)
-    }])[pkg.get("features", FEATURES)]
+    # Ambient weather & density adjustment factor
+    weather_factor = 1.0 + max(0.0, (ambient_temp_c - 15.0) * 0.006) + max(0.0, (air_humidity_pct - 50.0) * 0.0015)
 
-    scaled_x = scaler.transform(sample_df)
-    pred_lpm = float(model.predict(scaled_x)[0])
-    pred_lpm = round(max(5.0, pred_lpm), 2)
-
-    # Secondary pump volumetric rate: LPM * 0.06 = m3/h
+    pred_lpm = round(max(5.0, base_lpm * weather_factor), 2)
     pump_m3_h = round(pred_lpm * 0.06, 2)
     heat_kw = round(float(server_heat_kw), 2)
 
     # Operational status check
     status = "Optimal Cooling Envelope"
-    if server_heat_kw > 20.0 or ambient_temp_c > 30.0:
+    if server_heat_kw > 16.0 or ambient_temp_c > 28.0:
         status = "High Thermal Load - High Flow Mandated"
+    elif server_heat_kw < 8.0:
+        status = "Low Load - Conservation Mode"
 
     return {
         "required_water_flow_lpm": pred_lpm,

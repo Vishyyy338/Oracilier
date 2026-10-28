@@ -10,7 +10,7 @@ The project is zero-dependency ready—it runs out of the box on Python 3.8+ wit
 
 ### Option 1: One-Click Launch
 
-**On Windows:**
+**On Your Windows:**
 Double-click `start.bat` or run:
 ```cmd
 start.bat
